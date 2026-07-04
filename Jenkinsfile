@@ -32,13 +32,7 @@ pipeline {
             }
         }
 
-        stage('Terraform Validate') {
-            steps {
-                dir('infra') {
-                    sh 'terraform validate'
-                }
-            }
-        }
+        
 
         stage('Terraform Plan') {
             when {
@@ -95,46 +89,85 @@ pipeline {
         }
 
         stage('Docker Build') {
-            steps {
-                dir('fintech-app/frontend') {
-                    sh '''
-                    docker build -t ${DOCKER_USER}/floci-k8s:latest .
-                    '''
+    steps {
+        script {
+            def services = [
+                'user-service',
+                'kyc-service',
+                'merchant-service',
+                'payin-service',
+                'payout-service',
+                'transaction-service',
+                'notification-service',
+                'fraud-service'
+            ]
+
+            for (service in services) {
+                dir("fintech-app/microservices/${service}") {
+                    sh "docker build -t ${DOCKER_USER}/${service}:v1 ."
                 }
             }
         }
+    }
+}
 
         stage('Trivy Scan') {
-            steps {
-                sh '''
-                trivy image --severity HIGH,CRITICAL ${DOCKER_USER}/floci-k8s:latest
-                '''
+    steps {
+        script {
+            def services = [
+                'user-service',
+                'kyc-service',
+                'merchant-service',
+                'payin-service',
+                'payout-service',
+                'transaction-service',
+                'notification-service',
+                'fraud-service'
+            ]
+
+            for (service in services) {
+                sh "trivy image --severity HIGH,CRITICAL ${DOCKER_USER}/${service}:v1"
             }
         }
+    }
+}
 
         stage('Docker Push') {
-            steps {
-                sh '''
-                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                docker push ${DOCKER_USER}/floci-k8s:latest
-                '''
+    steps {
+        sh '''
+        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+        '''
+
+        script {
+            def services = [
+                'user-service',
+                'kyc-service',
+                'merchant-service',
+                'payin-service',
+                'payout-service',
+                'transaction-service',
+                'notification-service',
+                'fraud-service'
+            ]
+
+            for (service in services) {
+                sh "docker push ${DOCKER_USER}/${service}:v1"
             }
         }
+    }
+}
 
         stage('Deploy Kubernetes') {
-            when {
-                expression { !params.DESTROY }
-            }
-            steps {
-                sh '''
-                kubectl apply -f kubernetes/namespace.yaml
-                kubectl apply -f kubernetes/deployment.yaml
-                kubectl apply -f kubernetes/service.yaml
-                kubectl apply -f kubernetes/ingress.yaml
-                kubectl apply -f kubernetes/hpa.yaml
-                '''
-            }
-        }
+    when {
+        expression { !params.DESTROY }
+    }
+    steps {
+        sh '''
+        kubectl apply -f kubernetes/
+        kubectl apply -f services/
+        '''
+    }
+}
 
         stage('Terraform Destroy') {
             when {
