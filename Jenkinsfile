@@ -73,26 +73,24 @@ pipeline {
         }
 
         stage('SonarQube Scan') {
-            when {
-                expression { !params.DESTROY }
-            }
-            steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
+    steps {
+        script {
+            def scannerHome = tool 'SonarScanner'
 
-                    withSonarQubeEnv('SonarQube') {
-                        dir('fintech-app/frontend') {
-                            sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=fintech-app \
-                            -Dsonar.projectName=fintech-app \
-                            -Dsonar.sources=.
-                            """
-                        }
-                    }
+            withSonarQubeEnv('SonarQube') {
+                dir('fintech-app/frontend') {
+                    sh """
+                    ${scannerHome}/bin/sonar-scanner \
+                    -Dsonar.projectKey=fintech-app \
+                    -Dsonar.projectName=fintech-app \
+                    -Dsonar.sources=. \
+                    -Dsonar.token=${SONAR_TOKEN}
+                    """
                 }
             }
         }
+    }
+}
 
         stage('Terraform Apply') {
             when {
