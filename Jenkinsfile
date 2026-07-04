@@ -5,7 +5,6 @@ pipeline {
     environment {
         DOCKER_USER = credentials('DOCKER_USER')
         DOCKER_PASS = credentials('DOCKER_PASS')
-        SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
 
     parameters {
@@ -16,8 +15,18 @@ pipeline {
         )
     }
 
-    
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Terraform Init') {
+            when {
+                expression { !params.DESTROY }
+            }
             steps {
                 dir('infra') {
                     sh 'terraform init'
@@ -25,7 +34,16 @@ pipeline {
             }
         }
 
-        
+        stage('Terraform Validate') {
+            when {
+                expression { !params.DESTROY }
+            }
+            steps {
+                dir('infra') {
+                    sh 'terraform validate'
+                }
+            }
+        }
 
         stage('Terraform Plan') {
             when {
@@ -39,36 +57,42 @@ pipeline {
         }
 
         stage('Unit Test') {
+            when {
+                expression { !params.DESTROY }
+            }
             steps {
                 dir('fintech-app/frontend') {
                     sh '''
-                        if [ -f package.json ]; then
-                            npm install
-                            npm test || true
-                        fi
+                    if [ -f package.json ]; then
+                        npm install
+                        npm test || true
+                    fi
                     '''
                 }
             }
         }
 
         stage('SonarQube Scan') {
-    steps {
-        script {
-            def scannerHome = tool 'SonarScanner'
+            when {
+                expression { !params.DESTROY }
+            }
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
 
-            withSonarQubeEnv('SonarQube') {
-                dir('fintech-app/frontend') {
-                    sh """
-                    ${scannerHome}/bin/sonar-scanner \
-                    -Dsonar.projectKey=fintech-app \
-                    -Dsonar.projectName=fintech-app \
-                    -Dsonar.sources=.
-                    """
+                    withSonarQubeEnv('SonarQube') {
+                        dir('fintech-app/frontend') {
+                            sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=fintech-app \
+                            -Dsonar.projectName=fintech-app \
+                            -Dsonar.sources=.
+                            """
+                        }
+                    }
                 }
             }
         }
-    }
-}
 
         stage('Terraform Apply') {
             when {
@@ -82,85 +106,142 @@ pipeline {
         }
 
         stage('Docker Build') {
-    steps {
-        script {
-            def services = [
-                'user-service',
-                'kyc-service',
-                'merchant-service',
-                'payin-service',
-                'payout-service',
-                'transaction-service',
-                'notification-service',
-                'fraud-service'
-            ]
+            when {
+                expression { !params.DESTROY }
+            }
+            steps {
+                script {
 
-            for (service in services) {
-                dir("fintech-app/microservices/${service}") {
-                    sh "docker build -t ${DOCKER_USER}/${service}:v1 ."
+                    def services = [
+                        'user-service',
+                        'kyc-service',
+                        'merchant-service',
+                        'payin-service',
+                        'payout-service',
+                        'transaction-service',
+                        'notification-service',
+                        'fraud-service'
+                    ]
+
+                    for (service in services) {
+
+                        dir("fintech-app/microservices/${service}") {
+
+                            sh """
+                            docker build \
+                            -t ${DOCKER_USER}/${service}:v1 \
+                            .
+                            """
+                        }
+                    }
                 }
             }
         }
-    }
-}
 
         stage('Trivy Scan') {
-    steps {
-        script {
-            def services = [
-                'user-service',
-                'kyc-service',
-                'merchant-service',
-                'payin-service',
-                'payout-service',
-                'transaction-service',
-                'notification-service',
-                'fraud-service'
-            ]
+            when {
+                expression { !params.DESTROY }
+            }
+            steps {
 
-            for (service in services) {
-                sh "trivy image --severity HIGH,CRITICAL ${DOCKER_USER}/${service}:v1"
+                script {
+
+                    def services = [
+                        'user-service',
+                        'kyc-service',
+                        'merchant-service',
+                        'payin-service',
+                        'payout-service',
+                        'transaction-service',
+                        'notification-service',
+                        'fraud-service'
+                    ]
+
+                    for (service in services) {
+
+                        sh """
+                        trivy image \
+                        --severity HIGH,CRITICAL \
+                        ${DOCKER_USER}/${service}:v1
+                        """
+                    }
+
+                }
+
             }
         }
-    }
-}
 
         stage('Docker Push') {
-    steps {
-        sh '''
-        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-        '''
+            when {
+                expression { !params.DESTROY }
+            }
+            steps {
 
-        script {
-            def services = [
-                'user-service',
-                'kyc-service',
-                'merchant-service',
-                'payin-service',
-                'payout-service',
-                'transaction-service',
-                'notification-service',
-                'fraud-service'
-            ]
+                sh '''
+                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                '''
 
-            for (service in services) {
-                sh "docker push ${DOCKER_USER}/${service}:v1"
+                script {
+
+                    def services = [
+                        'user-service',
+                        'kyc-service',
+                        'merchant-service',
+                        'payin-service',
+                        'payout-service',
+                        'transaction-service',
+                        'notification-service',
+                        'fraud-service'
+                    ]
+
+                    for (service in services) {
+
+                        sh "docker push ${DOCKER_USER}/${service}:v1"
+
+                    }
+
+                }
+
             }
         }
-    }
-}
 
         stage('Deploy Kubernetes') {
-    when {
-        expression { !params.DESTROY }
-    }
-    steps {
-        sh '''
-        kubectl apply -f kubernetes/
-        kubectl apply -f services/
-        '''
-    }
-}
+            when {
+                expression { !params.DESTROY }
+            }
+            steps {
+
+                sh '''
+                kubectl apply -f kubernetes/
+                kubectl apply -f services/
+                '''
+
+                sh '''
+                kubectl rollout restart deployment user-service
+                kubectl rollout restart deployment kyc-service
+                kubectl rollout restart deployment merchant-service
+                kubectl rollout restart deployment payin-service
+                kubectl rollout restart deployment payout-service
+                kubectl rollout restart deployment transaction-service
+                kubectl rollout restart deployment notification-service
+                kubectl rollout restart deployment fraud-service
+                '''
+
+            }
+        }
+
+        stage('Verify Deployment') {
+            when {
+                expression { !params.DESTROY }
+            }
+            steps {
+
+                sh 'kubectl get pods'
+                sh 'kubectl get deployments'
+                sh 'kubectl get svc'
+
+            }
+        }
 
         stage('Terraform Destroy') {
             when {
@@ -172,6 +253,29 @@ pipeline {
                 }
             }
         }
+
     }
 
+    post {
 
+        always {
+
+            cleanWs()
+
+        }
+
+        success {
+
+            echo 'Pipeline completed successfully.'
+
+        }
+
+        failure {
+
+            echo 'Pipeline failed. Check the logs.'
+
+        }
+
+    }
+
+}
