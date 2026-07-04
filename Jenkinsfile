@@ -5,6 +5,7 @@ pipeline {
     environment {
         DOCKER_USER = credentials('DOCKER_USER')
         DOCKER_PASS = credentials('DOCKER_PASS')
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
 
     parameters {
