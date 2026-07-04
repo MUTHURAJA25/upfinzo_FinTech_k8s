@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fintech-backend-dev
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend:/app           # Sync source code
+      - /app/node_modules        # Prevent overwriting node_modules
+    environment:
+      - NODE_ENV=development
+      - WATCH_MODE=windows   # custom flag for Windows-friendly behavior
+    env_file:
+      - ./backend/.env
+    networks:
+      - fintech-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fintech-frontend-dev
+    ports:
+      - "5173:5173"
+    environment:
+      # - VITE_API_BASE=http://127.0.0.1:5001/api
+       - CHOKIDAR_USEPOLLING=true
+       - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend:/app          # Sync source code
+      - /app/node_modules        # Prevent overwriting node_modules
+    depends_on:
+      - backend
+    networks:
+      - fintech-net
+
+networks:
+  fintech-net:
+
+    driver: bridge
+

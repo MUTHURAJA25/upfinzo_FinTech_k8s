@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: merchant-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: merchant-service
+  template:
+    metadata:
+      labels:
+        app: merchant-service
+    spec:
+      containers:
+      - name: merchant-service
+        image: muthuraja25/merchant-service:v1
+        ports:
+        - containerPort: 3003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: merchant-service
+spec:
+  selector:
+    app: merchant-service
+  ports:
+  - port: 3003
+    targetPort: 3003

@@ -1,0 +1,31 @@
+apiVersion: autoscaling/v2
+
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: fintech-hpa
+  namespace: fintech
+
+spec:
+
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fintech-frontend
+
+  minReplicas: 2
+  maxReplicas: 5
+
+  metrics:
+
+  - type: Resource
+
+    resource:
+
+      name: cpu
+
+      target:
+
+        type: Utilization
+
+        averageUtilization: 70
