@@ -230,7 +230,8 @@ stage('Terraform Validate') {
                 sh 'kubectl get svc'
 
             }
-        }
+          }
+       }
 
         stage('Terraform Destroy') {
             when {
@@ -243,7 +244,7 @@ stage('Terraform Validate') {
             }
         }
 
-    }
+    
 
     post {
 
