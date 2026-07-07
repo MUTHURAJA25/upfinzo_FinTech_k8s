@@ -152,14 +152,13 @@ pipeline {
             }
         }
 
-        stage('Deploy using Helm') {
+        stage('GitOps Deployment') {
     when {
         expression { !params.DESTROY }
     }
     steps {
-        sh '''
-        /usr/local/bin/helm upgrade --install fintech fintech-app/helm -n fintech
-        '''
+        echo 'Docker images pushed successfully.'
+        echo 'Argo CD will synchronize the Helm chart and deploy automatically.'
     }
 }
 
