@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payin-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payin-service
+  template:
+    metadata:
+      labels:
+        app: payin-service
+    spec:
+      containers:
+      - name: payin-service
+        image: muthuraja25/payin-service:v1
+        ports:
+        - containerPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payin-service
+spec:
+  selector:
+    app: payin-service
+  ports:
+  - port: 3004
+    targetPort: 3004
