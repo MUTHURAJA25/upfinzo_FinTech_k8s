@@ -207,30 +207,17 @@ stage('Terraform Validate') {
             }
         }
 
-        stage('Deploy Kubernetes') {
-            when {
-                expression { !params.DESTROY }
-            }
-            steps {
-
-                sh '''
-                kubectl apply -f kubernetes/
-                kubectl apply -f services/
-                '''
-
-                sh '''
-                kubectl rollout restart deployment user-service
-                kubectl rollout restart deployment kyc-service
-                kubectl rollout restart deployment merchant-service
-                kubectl rollout restart deployment payin-service
-                kubectl rollout restart deployment payout-service
-                kubectl rollout restart deployment transaction-service
-                kubectl rollout restart deployment notification-service
-                kubectl rollout restart deployment fraud-service
-                '''
-
-            }
+        stage('Deploy using Helm') {
+    when {
+        expression { !params.DESTROY }
+    }
+    steps {
+        sh '''
+        helm upgrade --install fintech fintech-app/helm -n fintech
+        '''
         }
+    }
+  }
 
         stage('Verify Deployment') {
             when {
