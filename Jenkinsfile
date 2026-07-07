@@ -231,7 +231,7 @@ stage('Terraform Validate') {
 
             }
           }
-       }
+       
 
         stage('Terraform Destroy') {
             when {
