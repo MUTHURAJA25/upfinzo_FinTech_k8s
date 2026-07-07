@@ -153,15 +153,15 @@ pipeline {
         }
 
         stage('Deploy using Helm') {
-            when {
-                expression { !params.DESTROY }
-            }
-            steps {
-                sh '''
-                helm upgrade --install fintech fintech-app/helm -n fintech
-                '''
-            }
-        }
+    when {
+        expression { !params.DESTROY }
+    }
+    steps {
+        sh '''
+        /usr/local/bin/helm upgrade --install fintech fintech-app/helm -n fintech
+        '''
+    }
+}
 
         stage('Verify Deployment') {
             when {
