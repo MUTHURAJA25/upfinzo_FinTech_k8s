@@ -36,16 +36,18 @@ pipeline {
         }
        */
         
-        stage('Terraform Validate') {
-            when {
-                expression { !params.DESTROY }
-            }
-            steps {
-                dir('infra') {
-                    sh 'terraform validate'
-                }
-            }
+        /*
+stage('Terraform Validate') {
+    when {
+        expression { !params.DESTROY }
+    }
+    steps {
+        dir('infra') {
+            sh 'terraform validate'
         }
+    }
+}
+*/
          /*
         stage('Terraform Plan') {
             when {
