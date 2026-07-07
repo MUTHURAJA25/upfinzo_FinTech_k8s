@@ -267,4 +267,3 @@ stage('Terraform Validate') {
 
     }
 
-}
