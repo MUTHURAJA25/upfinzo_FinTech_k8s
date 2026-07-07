@@ -23,7 +23,7 @@ pipeline {
                 checkout scm
             }
         }
-
+        /*
         stage('Terraform Init') {
             when {
                 expression { !params.DESTROY }
@@ -34,7 +34,8 @@ pipeline {
                 }
             }
         }
-
+       */
+        
         stage('Terraform Validate') {
             when {
                 expression { !params.DESTROY }
@@ -45,7 +46,7 @@ pipeline {
                 }
             }
         }
-
+         /*
         stage('Terraform Plan') {
             when {
                 expression { !params.DESTROY }
@@ -56,7 +57,7 @@ pipeline {
                 }
             }
         }
-
+      */
         stage('Unit Test') {
             when {
                 expression { !params.DESTROY }
@@ -92,7 +93,7 @@ pipeline {
         }
     }
 }
-
+        /*
         stage('Terraform Apply') {
             when {
                 expression { !params.DESTROY }
@@ -103,7 +104,7 @@ pipeline {
                 }
             }
         }
-
+      */
         stage('Docker Build') {
             when {
                 expression { !params.DESTROY }
