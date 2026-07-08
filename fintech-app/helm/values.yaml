@@ -1,13 +1,13 @@
-replicaCount: 2
+replicaCount: 1
 
 userService:
   image:
     repository: muthuraja25/user-service
-    tag: v1
+    tag: v25
   port: 3001
 
 kycService:
   image:
     repository: muthuraja25/kyc-service
-    tag: v1
+    tag: v25
   port: 3002
